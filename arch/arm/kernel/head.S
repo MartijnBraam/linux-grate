@@ -410,7 +410,7 @@ ENDPROC(secondary_startup)
 ENDPROC(secondary_startup_arm)
 
 	/*
-	 * r6  = &secondary_data
+	 * r7  = &secondary_data
 	 */
 ENTRY(__secondary_switched)
 	ldr	sp, [r7, #12]			@ get secondary_data.stack
@@ -440,6 +440,7 @@ __secondary_data:
  *  r2  = atags or dtb pointer
  *  r4  = TTBR pointer (low word)
  *  r5  = TTBR pointer (high word if LPAE)
+ *  r7  = secondary_data pointer (SMP)
  *  r9  = processor ID
  *  r13 = *virtual* address to jump to upon completion
  */
@@ -477,6 +478,7 @@ ENDPROC(__enable_mmu)
  *  r0  = cp#15 control register
  *  r1  = machine ID
  *  r2  = atags or dtb pointer
+ *  r7  = secondary_data pointer (SMP)
  *  r9  = processor ID
  *  r13 = *virtual* address to jump to upon completion
  *
