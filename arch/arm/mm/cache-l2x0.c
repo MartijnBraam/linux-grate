@@ -807,6 +807,8 @@ static int __init __l2c_init(const struct l2c_init_data *data,
 	if (old_aux != aux)
 		pr_warn("L2C: DT/platform modifies aux control register: 0x%08x -> 0x%08x\n",
 		        old_aux, aux);
+	else if (aux_mask != ~0U && aux_val != 0)
+		pr_alert("L2C: platform provided aux values match the hardware, so have no effect.  Please remove them.\n");
 
 	/* Determine the number of ways */
 	switch (cache_id & L2X0_CACHE_ID_PART_MASK) {
@@ -1755,7 +1757,7 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
 	const struct l2c_init_data *data;
 	struct device_node *np;
 	struct resource res;
-	u32 cache_id, old_aux;
+	u32 cache_id;
 	u32 cache_level = 2;
 	bool nosync = false;
 
@@ -1777,14 +1779,6 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
 	if (of_device_is_compatible(np, "arm,pl310-cache") &&
 	    of_property_read_bool(np, "arm,io-coherent"))
 		data = &of_l2c310_coherent_data;
-
-	old_aux = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
-	if (old_aux != ((old_aux & aux_mask) | aux_val)) {
-		pr_warn("L2C: platform modifies aux control register: 0x%08x -> 0x%08x\n",
-		        old_aux, (old_aux & aux_mask) | aux_val);
-	} else if (aux_mask != ~0U && aux_val != 0) {
-		pr_alert("L2C: platform provided aux values match the hardware, so have no effect.  Please remove them.\n");
-	}
 
 	/* All L2 caches are unified, so this property should be specified */
 	if (!of_property_read_bool(np, "cache-unified"))
