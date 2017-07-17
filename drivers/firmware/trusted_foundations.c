@@ -23,6 +23,8 @@
 
 #define TF_SET_CPU_BOOT_ADDR_SMC 0xfffff200
 
+#define TF_GET_PROTOCOL_VERSION	0xfffffffb
+
 #define TF_CPU_PM		0xfffffffc
 #define TF_CPU_PM_S3		0xffffffe3
 #define TF_CPU_PM_S2		0xffffffe6
@@ -33,7 +35,7 @@
 static unsigned long cpu_boot_addr;
 static unsigned long tf_idle_mode;
 
-static void tf_generic_smc(u32 type, u32 arg1, u32 arg2)
+static u64 tf_generic_smc(u32 type, u32 arg1, u32 arg2)
 {
 	register u32 r0 asm("r0") = type;
 	register u32 r1 asm("r1") = arg1;
@@ -49,9 +51,10 @@ static void tf_generic_smc(u32 type, u32 arg1, u32 arg2)
 		"mov	r4, #0\n\t"
 		"smc	#0\n\t"
 		"ldmfd	sp!, {r4 - r11}\n\t"
-		:
-		: "r" (r0), "r" (r1), "r" (r2)
+		: "+r" (r0), "+r" (r1)
+		: "r" (r2)
 		: "memory", "r3", "r12", "lr");
+	return ((u64)r1 << 32) | r0;
 }
 
 static int tf_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
@@ -137,6 +140,11 @@ static int tf_init_cache(void)
 }
 #endif /* CONFIG_CACHE_L2X0 */
 
+static u32 tf_get_protocol_version(void)
+{
+	return tf_generic_smc(TF_GET_PROTOCOL_VERSION, 0, 0) >> 48;
+}
+
 static const struct firmware_ops trusted_foundations_ops = {
 	.set_cpu_boot_addr = tf_set_cpu_boot_addr,
 	.prepare_idle = tf_prepare_idle,
@@ -147,6 +155,12 @@ static const struct firmware_ops trusted_foundations_ops = {
 
 void register_trusted_foundations(struct trusted_foundations_platform_data *pd)
 {
+	unsigned int protocol = tf_get_protocol_version();
+
+	pr_info("TF: version %u.%u, protocol %u.%u\n",
+		pd->version_major, pd->version_minor,
+		protocol >> 8, protocol & 0xFF);
+
 	/*
 	 * we are not using version information for now since currently
 	 * supported SMCs are compatible with all TF releases
@@ -172,6 +186,7 @@ void of_register_trusted_foundations(void)
 				   &pdata.version_minor);
 	if (err != 0)
 		panic("Trusted Foundation: missing version-minor property\n");
+
 	register_trusted_foundations(&pdata);
 }
 
