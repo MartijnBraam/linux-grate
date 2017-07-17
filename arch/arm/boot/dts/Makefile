@@ -1182,6 +1182,7 @@ dtb-$(CONFIG_ARCH_TEGRA_2x_SOC) += \
 dtb-$(CONFIG_ARCH_TEGRA_3x_SOC) += \
 	tegra30-apalis-eval.dtb \
 	tegra30-apalis-v1.1-eval.dtb \
+	tegra30-asus-tf300t.dtb \
 	tegra30-beaver.dtb \
 	tegra30-cardhu-a02.dtb \
 	tegra30-cardhu-a04.dtb \
