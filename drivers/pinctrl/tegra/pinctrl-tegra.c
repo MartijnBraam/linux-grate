@@ -66,11 +66,42 @@ static int tegra_pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
 }
 
 #ifdef CONFIG_DEBUG_FS
+static const struct tegra_pingroup *tegra_find_mux_group(
+	struct tegra_pmx *pmx, unsigned pin)
+{
+	const struct tegra_pingroup *g;
+	int i, j;
+
+	for (i = 0; i < pmx->soc->ngroups; ++i) {
+		g = &pmx->soc->groups[i];
+		if (g->mux_reg < 0)
+			continue;
+
+		for (j = 0; j < g->npins; ++j)
+			if (pin == g->pins[j])
+				return g;
+	}
+
+	return NULL;
+}
+
 static void tegra_pinctrl_pin_dbg_show(struct pinctrl_dev *pctldev,
 				       struct seq_file *s,
-				       unsigned offset)
+				       unsigned pin)
 {
+	struct tegra_pmx *pmx = pinctrl_dev_get_drvdata(pctldev);
+	const struct tegra_pingroup *g = tegra_find_mux_group(pmx, pin);
+	u32 func;
+
 	seq_printf(s, " %s", dev_name(pctldev->dev));
+
+	if (!g)
+		return;
+
+	func = pmx_readl(pmx, g->mux_bank, g->mux_reg) >> g->mux_bit;
+	func &= 3;
+
+	seq_printf(s, " func=%s", pmx->soc->functions[g->funcs[func]].name);
 }
 #endif
 
