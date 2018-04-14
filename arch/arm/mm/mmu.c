@@ -15,6 +15,7 @@
 #include <linux/vmalloc.h>
 #include <linux/sizes.h>
 
+#include <asm/bootfb.h>
 #include <asm/cp15.h>
 #include <asm/cputype.h>
 #include <asm/sections.h>
@@ -1119,6 +1120,8 @@ void __init debug_ll_io_init(void)
 {
 	struct map_desc map;
 
+	pr_crit("debug_ll_io_init() start\n");
+#ifndef CONFIG_DEBUG_LL_BOOT_FRAMEBUFFER
 	debug_ll_addr(&map.pfn, &map.virtual);
 	if (!map.pfn || !map.virtual)
 		return;
@@ -1127,6 +1130,17 @@ void __init debug_ll_io_init(void)
 	map.length = PAGE_SIZE;
 	map.type = MT_DEVICE;
 	iotable_init(&map, 1);
+#else
+	bootfb_addr = IOMEM(CONFIG_DEBUG_BOOTFB_PGVIRT);
+	bootfb_skip_for_pageinit = 0;
+
+	map.pfn = __phys_to_pfn(CONFIG_DEBUG_BOOTFB_PHYS);
+	map.virtual = CONFIG_DEBUG_BOOTFB_PGVIRT & PAGE_MASK;
+	map.length = BOOTFB_LEN;
+	map.type = MT_DEVICE_WC;
+	iotable_init(&map, 1);
+#endif
+	pr_crit("debug_ll_io_init() done\n");
 }
 #endif
 

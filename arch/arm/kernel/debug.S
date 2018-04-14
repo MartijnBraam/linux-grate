@@ -90,11 +90,19 @@ ENTRY(printascii)
 		bne	3f
 		mov	r1, #'\r'
 		waituart r2, r3
+#ifdef CONFIG_DEBUG_LL_BOOT_FRAMEBUFFER
+		senduart r1, r3, r2, ip
+#else
 		senduart r1, r3
+#endif
 		busyuart r2, r3
 		mov	r1, #'\n'
 3:		waituart r2, r3
+#ifdef CONFIG_DEBUG_LL_BOOT_FRAMEBUFFER
+		senduart r1, r3, r2, ip
+#else
 		senduart r1, r3
+#endif
 		busyuart r2, r3
 		b	1b
 ENDPROC(printascii)

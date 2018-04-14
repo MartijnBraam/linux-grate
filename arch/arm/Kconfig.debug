@@ -1442,6 +1442,14 @@ choice
 		  options; the platform specific options are deprecated
 		  and will be soon removed.
 
+	config DEBUG_LL_BOOT_FRAMEBUFFER
+		bool "Kernel low-level debugging via bootloader framebuffer"
+		select FONT_SUPPORT
+		select FONT_8x8
+		help
+		  Say Y here if you want kernel low-level debugging support
+		  writing to bootloader-configured framebuffer.
+
 endchoice
 
 config DEBUG_AT91_UART
@@ -1568,6 +1576,7 @@ config DEBUG_LL_INCLUDE
 	default "debug/bcm63xx.S" if DEBUG_BCM63XX_UART
 	default "debug/digicolor.S" if DEBUG_DIGICOLOR_UA0
 	default "debug/brcmstb.S" if DEBUG_BRCMSTB_UART
+	default "debug/bootfb.S" if DEBUG_LL_BOOT_FRAMEBUFFER
 	default "mach/debug-macro.S"
 
 # Compatibility options for PL01x
@@ -1858,9 +1867,50 @@ config DEBUG_UART_8250_FLOW_CONTROL
 	depends on DEBUG_LL_UART_8250 || DEBUG_UART_8250
 	default y if ARCH_EBSA110 || DEBUG_FOOTBRIDGE_COM1 || DEBUG_GEMINI || ARCH_RPC
 
+
+if DEBUG_LL_BOOT_FRAMEBUFFER
+
+config DEBUG_BOOTFB_PHYS
+	hex "Physical base address of boot framebuffer"
+	default 0xabc01000 if ARCH_TEGRA_3x_SOC
+
+config DEBUG_BOOTFB_VIRT
+	hex "Virtual base address of boot framebuffer before init_paging()"
+	default 0xdbc01000 if ARCH_TEGRA_3x_SOC
+	default DEBUG_BOOTFB_PHYS if !MMU
+
+config DEBUG_BOOTFB_PGVIRT
+	hex "Virtual base address of boot framebuffer after init_paging()"
+	default 0xfc000000 if ARCH_TEGRA_3x_SOC
+	default DEBUG_BOOTFB_PHYS if !MMU
+
+config DEBUG_BOOTFB_WIDTH
+	int "Boot framebuffer width in pixels"
+	default 1280
+
+config DEBUG_BOOTFB_HEIGHT
+	int "Boot framebuffer height in pixels"
+	default 800
+
+config DEBUG_BOOTFB_PIXEL_SIZE
+	int "Boot framebuffer pixel size in bytes"
+	range 1 4
+	default 2
+
+config DEBUG_BOOTFB_STRIDE
+	int "Boot framebuffer row size in bytes (>= HEIGHT * PIXEL_SIZE)"
+	default 2560
+
+config DEBUG_BOOTFB_PAGE_DELAY_MS
+	int "Additional delay after filling up screen page"
+	default 0
+
+endif
+
 config DEBUG_UNCOMPRESS
 	bool "Enable decompressor debugging via DEBUG_LL output"
-	depends on ARCH_MULTIPLATFORM || PLAT_SAMSUNG || ARM_SINGLE_ARMV7M
+	depends on !DEBUG_LL_BOOT_FRAMEBUFFER && \
+	           (ARCH_MULTIPLATFORM || PLAT_SAMSUNG || ARM_SINGLE_ARMV7M)
 	depends on DEBUG_LL && !DEBUG_OMAP2PLUS_UART && \
 		     (!DEBUG_TEGRA_UART || !ZBOOT_ROM) && \
 		     !DEBUG_BRCMSTB_UART
