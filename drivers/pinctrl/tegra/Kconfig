@@ -2,7 +2,7 @@
 config PINCTRL_TEGRA
 	bool
 	select PINMUX
-	select PINCONF
+	select GENERIC_PINCONF
 
 config PINCTRL_TEGRA20
 	bool
