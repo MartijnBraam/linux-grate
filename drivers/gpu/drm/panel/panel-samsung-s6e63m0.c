@@ -448,6 +448,13 @@ static int s6e63m0_probe(struct spi_device *spi)
 	ctx->enabled = false;
 	ctx->prepared = false;
 
+	ctx->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->reset_gpio)) {
+		DRM_DEV_ERROR(dev, "cannot get reset-gpios %ld\n",
+			      PTR_ERR(ctx->reset_gpio));
+		return PTR_ERR(ctx->reset_gpio);
+	}
+
 	ctx->supplies[0].supply = "vdd3";
 	ctx->supplies[1].supply = "vci";
 	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(ctx->supplies),
@@ -455,13 +462,6 @@ static int s6e63m0_probe(struct spi_device *spi)
 	if (ret < 0) {
 		DRM_DEV_ERROR(dev, "failed to get regulators: %d\n", ret);
 		return ret;
-	}
-
-	ctx->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->reset_gpio)) {
-		DRM_DEV_ERROR(dev, "cannot get reset-gpios %ld\n",
-			      PTR_ERR(ctx->reset_gpio));
-		return PTR_ERR(ctx->reset_gpio);
 	}
 
 	spi->bits_per_word = 9;
