@@ -212,7 +212,8 @@ int pinconf_set_config(struct pinctrl_dev *pctldev, unsigned pin,
 #ifdef CONFIG_DEBUG_FS
 
 static void pinconf_show_config(struct seq_file *s, struct pinctrl_dev *pctldev,
-		      unsigned long *configs, unsigned num_configs)
+				const char *prefix,
+				unsigned long *configs, unsigned num_configs)
 {
 	const struct pinconf_ops *confops;
 	int i;
@@ -223,6 +224,7 @@ static void pinconf_show_config(struct seq_file *s, struct pinctrl_dev *pctldev,
 		confops = NULL;
 
 	for (i = 0; i < num_configs; i++) {
+		seq_puts(s, prefix);
 		seq_puts(s, "config ");
 		if (confops && confops->pin_config_config_dbg_show)
 			confops->pin_config_config_dbg_show(pctldev, s,
@@ -252,7 +254,7 @@ void pinconf_show_map(struct seq_file *s, const struct pinctrl_map *map)
 
 	seq_printf(s, "%s\n", map->data.configs.group_or_pin);
 
-	pinconf_show_config(s, pctldev, map->data.configs.configs,
+	pinconf_show_config(s, pctldev, "", map->data.configs.configs,
 			    map->data.configs.num_configs);
 }
 
@@ -267,11 +269,11 @@ void pinconf_show_setting(struct seq_file *s,
 	case PIN_MAP_TYPE_CONFIGS_PIN:
 		desc = pin_desc_get(setting->pctldev,
 				    setting->data.configs.group_or_pin);
-		seq_printf(s, "pin %s (%d)", desc->name,
+		seq_printf(s, "pin %s (%d)\n", desc->name,
 			   setting->data.configs.group_or_pin);
 		break;
 	case PIN_MAP_TYPE_CONFIGS_GROUP:
-		seq_printf(s, "group %s (%d)",
+		seq_printf(s, "group %s (%d)\n",
 			   pctlops->get_group_name(pctldev,
 					setting->data.configs.group_or_pin),
 			   setting->data.configs.group_or_pin);
@@ -284,7 +286,8 @@ void pinconf_show_setting(struct seq_file *s,
 	 * FIXME: We should really get the pin controller to dump the config
 	 * values, so they can be decoded to something meaningful.
 	 */
-	pinconf_show_config(s, pctldev, setting->data.configs.configs,
+	pinconf_show_config(s, pctldev, "      ",
+			    setting->data.configs.configs,
 			    setting->data.configs.num_configs);
 }
 
