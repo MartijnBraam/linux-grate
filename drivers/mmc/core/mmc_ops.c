@@ -20,6 +20,7 @@
 #include "mmc_ops.h"
 
 #define MMC_OPS_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
+#define MMC_MAX_POLL_MS		(1000) /* 1 second */
 
 static const u8 tuning_blk_pattern_4bit[] = {
 	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
@@ -454,6 +455,7 @@ static int mmc_poll_for_busy(struct mmc_card *card, unsigned int timeout_ms,
 	struct mmc_host *host = card->host;
 	int err;
 	unsigned long timeout;
+	unsigned int wait_ms;
 	u32 status = 0;
 	bool expired = false;
 	bool busy = false;
@@ -473,6 +475,7 @@ static int mmc_poll_for_busy(struct mmc_card *card, unsigned int timeout_ms,
 	}
 
 	timeout = jiffies + msecs_to_jiffies(timeout_ms) + 1;
+	wait_ms = 1;
 	do {
 		/*
 		 * Due to the possibility of being preempted while polling,
@@ -482,6 +485,11 @@ static int mmc_poll_for_busy(struct mmc_card *card, unsigned int timeout_ms,
 
 		if (host->ops->card_busy) {
 			busy = host->ops->card_busy(host);
+			if (busy && !expired) {
+				mmc_delay(wait_ms);
+				if (wait_ms < MMC_MAX_POLL_MS)
+					wait_ms *= 2;
+			}
 		} else {
 			err = mmc_send_status(card, &status);
 			if (retry_crc_err && err == -EILSEQ) {
