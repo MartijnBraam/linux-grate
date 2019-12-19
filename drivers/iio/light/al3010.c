@@ -8,6 +8,9 @@
  * IIO driver for AL3010 (7-bit I2C slave address 0x1C).
  *
  * TODO: interrupt support, thresholds
+ * When the driver will get support for interrupt handling, then interrupt
+ * will need to be disabled before turning sensor OFF in order to avoid
+ * potential races with the interrupt handling.
  */
 
 #include <linux/i2c.h>
@@ -71,13 +74,18 @@ static const struct attribute_group al3010_attribute_group = {
 	.attrs = al3010_attributes,
 };
 
+static int al3010_set_pwr(struct i2c_client *client, bool pwr)
+{
+	u8 val = pwr ? AL3010_CONFIG_ENABLE : AL3010_CONFIG_DISABLE;
+	return i2c_smbus_write_byte_data(client, AL3010_REG_SYSTEM, val);
+}
+
 static int al3010_init(struct al3010_data *data)
 {
 	int ret;
 
-	/* power on */
-	ret = i2c_smbus_write_byte_data(data->client, AL3010_REG_SYSTEM,
-					AL3010_CONFIG_ENABLE);
+	ret = al3010_set_pwr(data->client, true);
+
 	if (ret < 0)
 		return ret;
 
@@ -185,9 +193,20 @@ static int al3010_probe(struct i2c_client *client,
 
 static int al3010_remove(struct i2c_client *client)
 {
-	return i2c_smbus_write_byte_data(client, AL3010_REG_SYSTEM,
-					 AL3010_CONFIG_DISABLE);
+	return al3010_set_pwr(client, false);
 }
+
+static int __maybe_unused al3010_suspend(struct device *dev)
+{
+	return al3010_set_pwr(to_i2c_client(dev), false);
+}
+
+static int __maybe_unused al3010_resume(struct device *dev)
+{
+	return al3010_set_pwr(to_i2c_client(dev), true);
+}
+
+SIMPLE_DEV_PM_OPS(al3010_pm_ops, al3010_suspend, al3010_resume);
 
 static const struct i2c_device_id al3010_id[] = {
 	{"al3010", 0},
@@ -205,6 +224,7 @@ static struct i2c_driver al3010_driver = {
 	.driver = {
 		.name = AL3010_DRV_NAME,
 		.of_match_table = al3010_of_match,
+		.pm = &al3010_pm_ops,
 	},
 	.probe		= al3010_probe,
 	.remove		= al3010_remove,
