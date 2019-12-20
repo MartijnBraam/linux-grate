@@ -1064,6 +1064,16 @@
 					 "0",  "0", "-1";
 		};
 
+		light-sensor@1c {
+			compatible = "dynaimage,al3010";
+			reg = <0x1c>;
+
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(Z, 2) IRQ_TYPE_LEVEL_HIGH>;
+
+			vdd-supply = <&vdd_3v3_sys>;
+		};
+
 		proximity-sensor@28 {
 			compatible = "microchip,cap1106";
 			reg = <0x28>;
