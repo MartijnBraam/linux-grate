@@ -1074,8 +1074,10 @@ void __init hyp_mode_check(void)
 #endif
 }
 
+#ifdef CONFIG_DEBUG_LL_BOOT_FRAMEBUFFER
 extern void *bootfb_addr;
 extern int bootfb_skip_for_pageinit;
+#endif
 
 void __init setup_arch(char **cmdline_p)
 {
@@ -1114,7 +1116,9 @@ void __init setup_arch(char **cmdline_p)
 	early_fixmap_init();
 	early_ioremap_init();
 
+#ifdef CONFIG_DEBUG_LL_BOOT_FRAMEBUFFER
 	bootfb_addr = NULL;
+#endif
 
 	parse_early_param();
 
@@ -1134,7 +1138,9 @@ void __init setup_arch(char **cmdline_p)
 	adjust_lowmem_bounds();
 
 	pr_crit("before early_ioremap_reset()\n");
+#ifdef CONFIG_DEBUG_LL_BOOT_FRAMEBUFFER
 	bootfb_skip_for_pageinit = 1;
+#endif
 
 	early_ioremap_reset();
 	pr_crit("after early_ioremap_reset()\n");
