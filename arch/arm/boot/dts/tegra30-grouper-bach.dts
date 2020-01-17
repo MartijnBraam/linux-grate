@@ -1104,6 +1104,18 @@
 			};
 		};
 
+		nfc@2a {
+			compatible = "nxp,pn544-i2c";
+			reg = <0x2a>;
+			clock-frequency = <100000>;
+
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(S, 7) IRQ_TYPE_EDGE_RISING>;
+
+			enable-gpios = <&gpio TEGRA_GPIO(P, 0) GPIO_ACTIVE_HIGH>;
+			firmware-gpios = <&gpio TEGRA_GPIO(P, 3) GPIO_ACTIVE_HIGH>;
+		};
+
 		accelerometer@68 {
 			compatible = "invensense,mpu6050";
 			reg = <0x68>;
