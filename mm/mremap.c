@@ -199,6 +199,9 @@ static bool move_normal_pmd(struct vm_area_struct *vma, unsigned long old_addr,
 	struct mm_struct *mm = vma->vm_mm;
 	pmd_t pmd;
 
+	if ((old_addr & ~PMD_MASK) || (new_addr & ~PMD_MASK))
+		return false;
+
 	/*
 	 * The destination pmd shouldn't be established, free_pgtables()
 	 * should have release it.
@@ -237,7 +240,7 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
 		unsigned long new_addr, unsigned long len,
 		bool need_rmap_locks)
 {
-	unsigned long extent, old_next, new_next, old_end;
+	unsigned long extent, next, old_end;
 	struct mmu_notifier_range range;
 	pmd_t *old_pmd, *new_pmd;
 
@@ -250,9 +253,11 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
 
 	for (; old_addr < old_end; old_addr += extent, new_addr += extent) {
 		cond_resched();
-		old_next = pmd_addr_end(old_addr, old_end);
-		new_next = pmd_addr_end(new_addr, new_addr + len);
-		extent = min((old_next - old_addr), (new_next - new_addr));
+		next = (old_addr + PMD_SIZE) & PMD_MASK;
+		/* even if next overflowed, extent below will be ok */
+		extent = next - old_addr;
+		if (extent > old_end - old_addr)
+			extent = old_end - old_addr;
 		old_pmd = get_old_pmd(vma->vm_mm, old_addr);
 		if (!old_pmd)
 			continue;
@@ -296,6 +301,9 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
 
 		if (pte_alloc(new_vma->vm_mm, new_pmd))
 			break;
+		next = (new_addr + PMD_SIZE) & PMD_MASK;
+		if (extent > next - new_addr)
+			extent = next - new_addr;
 		move_ptes(vma, old_pmd, old_addr, old_addr + extent, new_vma,
 			  new_pmd, new_addr, need_rmap_locks);
 	}
