@@ -17,8 +17,11 @@ properties:
   compatible:
     items:
       - enum:
+        - acer,a500-iconia-ec # Acer A500 Iconia tablet device
         - dell,wyse-ariel-ec  # Dell Wyse Ariel board (3020)
-      - const: ene,kb3930
+      - enum:
+        - ene,kb3930
+        - ene,kb930
   reg:
     maxItems: 1
 
