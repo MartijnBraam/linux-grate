@@ -29,6 +29,8 @@ properties:
     description: GPIO used with the shutdown protocol on Ariel
     maxItems: 2
 
+  monitored-battery: true
+  power-supplies: true
   system-power-controller: true
 
 required:
@@ -41,6 +43,19 @@ examples:
   - |
     #include <dt-bindings/gpio/gpio.h>
 
+    battery: battery-cell {
+            compatible = "simple-battery";
+            charge-full-design-microamp-hours = <3260000>;
+            energy-full-design-microwatt-hours = <24000000>;
+            operating-range-celsius = <0 40>;
+    };
+
+    mains: ac-adapter {
+      compatible = "gpio-charger";
+      charger-type = "mains";
+      gpios = <&gpio 125 GPIO_ACTIVE_LOW>;
+    };
+
     i2c {
       #address-cells = <1>;
       #size-cells = <0>;
@@ -52,6 +67,9 @@ examples:
 
         off-gpios = <&gpio 126 GPIO_ACTIVE_HIGH>,
                     <&gpio 127 GPIO_ACTIVE_HIGH>;
+
+        monitored-battery = <&battery>;
+        power-supplies = <&mains>;
       };
     };
 
