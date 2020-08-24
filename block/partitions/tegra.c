@@ -21,6 +21,7 @@
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/of.h>
+#include <linux/of_address.h>
 #include <linux/sizes.h>
 #include <linux/slab.h>
 #include <linux/string.h>
@@ -436,6 +437,10 @@ next_sector:
 	return ret;
 }
 
+static const u32 tegra124_sdhci_bases[TEGRA_PT_SDHCI_DEVICE_INSTANCES] = {
+	0x700b0000, 0x700b0200, 0x700b0400, 0x700b0600,
+};
+
 static const u32 tegra20_sdhci_bases[TEGRA_PT_SDHCI_DEVICE_INSTANCES] = {
 	0xc8000000, 0xc8000200, 0xc8000400, 0xc8000600,
 };
@@ -447,6 +452,7 @@ static const u32 tegra30_sdhci_bases[TEGRA_PT_SDHCI_DEVICE_INSTANCES] = {
 static const struct of_device_id tegra_sdhci_match[] = {
 	{ .compatible = "nvidia,tegra20-sdhci", .data = tegra20_sdhci_bases, },
 	{ .compatible = "nvidia,tegra30-sdhci", .data = tegra30_sdhci_bases, },
+	{ .compatible = "nvidia,tegra124-sdhci", .data = tegra124_sdhci_bases, },
 	{}
 };
 
@@ -456,9 +462,9 @@ tegra_partition_table_emmc_boot_offset(struct tegra_partition_table_parser *ptp)
 	struct mmc_card *card = mmc_bdev_to_card(ptp->state->bdev);
 	const struct of_device_id *matched;
 	const u32 *sdhci_bases;
+	const __be32 *addrp;
 	u32 sdhci_base;
 	unsigned int i;
-	int err;
 
 	/* filter out unexpected/untested boot sources */
 	if (!card || card->ext_csd.rev < 3 ||
@@ -477,10 +483,11 @@ tegra_partition_table_emmc_boot_offset(struct tegra_partition_table_parser *ptp)
 	sdhci_bases = matched->data;
 
 	/* figure out SDHCI instance ID by the base address */
-	err = of_property_read_u32_index(card->host->parent->of_node,
-					 "reg", 0, &sdhci_base);
-	if (err)
+	addrp = of_get_address(card->host->parent->of_node, 0, NULL, NULL);
+	if (!addrp)
 		return -1;
+
+	sdhci_base = of_translate_address(card->host->parent->of_node, addrp);
 
 	for (i = 0; i < TEGRA_PT_SDHCI_DEVICE_INSTANCES; i++) {
 		if (sdhci_base == sdhci_bases[i])
