@@ -14,12 +14,28 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs = "clk_ignore_unused tegraboot=sdmmc PMOS_NO_OUTPUT_REDIRECT";
+		bootargs = "clk_ignore_unused tegraboot=sdmmc console=tty1 PMOS_NO_OUTPUT_REDIRECT";
+
+		framebuffer0: framebuffer@ac001000 {
+			compatible = "simple-framebuffer";
+			reg = <0xac001000 (2048 * 1536 * 2)>;
+			width = <1536>;
+			height = <2048>;
+			stride = <(2048 * 2)>;
+			format = "r5g6b5";
+		};
 	};
 
 	memory {
 		device_type = "memory";
 		reg = <0x0 0x80000000 0x0 0x80000000>;
+	};
+
+	reserved-memory {
+		framebuffer@ac001000 {
+			reg = <0x0 0xac001000 0x0 0xc1ffff>;
+			no-map;
+		};
 	};
 
 	clk32k_in: clock@0 {
